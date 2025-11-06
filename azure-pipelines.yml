@@ -1,0 +1,146 @@
+trigger:
+  - main
+
+variables:
+  GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
+  AZURE_LOCATION: brazilsouth
+  projectName: mottu-yard
+  imageTag: latest
+
+stages:
+  - stage: Build
+    displayName: CI (build & tests)
+    jobs:
+      - job: gradleBuild
+        pool:
+          vmImage: ubuntu-latest
+
+        steps:
+          - task: Cache@2
+            inputs:
+              key: 'gradle | "$(Agent.OS)" | **/*.gradle*'
+              restoreKeys: |
+                gradle | "$(Agent.OS)"
+                gradle
+              path: $(GRADLE_USER_HOME)
+            displayName: Configure gradle caching
+
+          - task: Gradle@3
+            inputs:
+              gradleWrapperFile: "gradlew"
+              tasks: "clean build"
+              options: "--build-cache -Dspring.profiles.active=test"
+              publishJUnitResults: true
+              testResultsFiles: "**/TEST-*.xml"
+              javaHomeOption: "JDKVersion"
+              jdkVersionOption: "1.17"
+              sonarQubeRunAnalysis: false
+
+          - script: ./gradlew --stop
+            displayName: Gradlew stop
+
+          - task: CopyFiles@2
+            displayName: "Copy Files to artifact staging directory"
+            inputs:
+              SourceFolder: "$(System.DefaultWorkingDirectory)/build/libs"
+              Contents: "*.jar"
+              TargetFolder: $(Build.ArtifactStagingDirectory)
+
+          - task: Bash@3
+            displayName: "Rename JAR"
+            inputs:
+              targetType: "inline"
+              script: |
+                cd $(Build.ArtifactStagingDirectory)
+                # Filtrar apenas o JAR principal (sem -plain)
+                JAR_FILE=$(ls *.jar | grep -v plain | head -n 1)
+                if [ -n "$JAR_FILE" ]; then
+                  mv "$JAR_FILE" mottu-yard.jar
+                  echo "Renamed $JAR_FILE to mottu-yard.jar"
+                  ls -lh
+                else
+                  echo "No JAR file found!"
+                  exit 1
+                fi
+
+          - publish: $(Build.ArtifactStagingDirectory)
+            artifact: MottuYardApp
+
+      - job: BuildAndPushImage
+        displayName: Build and push docker image
+        pool:
+          vmImage: ubuntu-latest
+        dependsOn: gradleBuild
+        condition: succeeded()
+        steps:
+          - task: Docker@2
+            inputs:
+              command: login
+              containerRegistry: ACR-ServiceConnection
+          - task: Docker@2
+            inputs:
+              command: buildAndPush
+              repository: $(projectName)
+              tags: |
+                $(imageTag)
+                $(Build.BuildId)
+
+  - stage: Deploy_ACI
+    displayName: CD - Deploy to Azure Container Instances
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: Deploy
+        displayName: Deploy App to ACI
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: none
+
+          - task: AzureCLI@2
+            displayName: 'Deploy Application to ACI'
+            inputs:
+              azureSubscription: 'Azure-ServiceConnection'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                echo "Using resource group: $(RESOURCE_GROUP) in $(AZURE_LOCATION)"
+
+                ACR_USERNAME="$(ACR_USERNAME)"
+                ACR_PASSWORD="$(ACR_PASSWORD)"
+
+                APP_CONTAINER_NAME="$(ACI_NAME)"
+                APP_DNS_LABEL="$(ACI_NAME)"
+
+                echo "Cleaning up previous container if it exists..."
+                az container delete --resource-group "$(RESOURCE_GROUP)" --name "$APP_CONTAINER_NAME" --yes || true
+                sleep 10
+
+                APP_IMAGE="$(ACR_LOGIN_SERVER)/$(projectName):$(imageTag)"
+                echo "Deploying application container: $APP_CONTAINER_NAME"
+
+                az container create \
+                  --resource-group "$(RESOURCE_GROUP)" \
+                  --name "$APP_CONTAINER_NAME" \
+                  --image "$APP_IMAGE" \
+                  --cpu 1 --memory 1.5 \
+                  --registry-login-server "$(ACR_LOGIN_SERVER)" \
+                  --registry-username "$ACR_USERNAME" \
+                  --registry-password "$ACR_PASSWORD" \
+                  --environment-variables \
+                    DB_URL="jdbc:postgresql://$(DB_SERVER):5432/$(DB_NAME)?sslmode=require" \
+                    DB_USER="$(DB_USER)" \
+                    DB_PASS="$(DB_PASS)" \
+                    SPRING_FLYWAY_ENABLED=true \
+                    GITHUB_CLIENT_ID="$(GITHUB_CLIENT_ID)" \
+                    GITHUB_CLIENT_SECRET="$(GITHUB_CLIENT_SECRET)" \
+                  --ports 8080 \
+                  --os-type Linux \
+                  --dns-name-label "$APP_DNS_LABEL" \
+                  --location "$(AZURE_LOCATION)" \
+                  --restart-policy Always
+
+                APP_URL="http://$APP_DNS_LABEL.$(AZURE_LOCATION).azurecontainer.io:8080"
+                echo "✅ Aplicação rodando em: $APP_URL"

@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Gradle
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Documentação
+*.md
+docs/
+LICENSE
+
+# Arquivos temporários
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Banco de dados local
+*.db
+*.sqlite
+
+# Environment
+.env
+.env.local
+
+# Node modules (se houver frontend)
+node_modules/
+
+# Build
+bin/
+out/
+target/

@@ -1,0 +1,77 @@
+package br.com.fiap.mottu.yard.service;
+
+import br.com.fiap.mottu.yard.exception.BusinessException;
+import br.com.fiap.mottu.yard.model.Patio;
+import br.com.fiap.mottu.yard.repository.MotoRepository;
+import br.com.fiap.mottu.yard.repository.PatioRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class PatioService {
+
+    private final PatioRepository patioRepository;
+    private final MotoRepository motoRepository;
+
+    public Page<Patio> findAll(Pageable pageable) {
+        return patioRepository.findAll(pageable);
+    }
+
+    public Page<Patio> search(String termo, Pageable pageable) {
+        String filtro = termo == null ? "" : termo.trim();
+        return patioRepository.findByNomeContainingIgnoreCaseOrEnderecoContainingIgnoreCase(
+                filtro,
+                filtro,
+                pageable
+        );
+    }
+
+    public List<Patio> findAll() {
+        return patioRepository.findAll();
+    }
+
+    public Optional<Patio> findById(Long id) {
+        return patioRepository.findById(id);
+    }
+
+    public Patio save(Patio patio) {
+        return patioRepository.save(patio);
+    }
+
+    public void deleteById(Long id) {
+        try {
+            patioRepository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException("Não é possível excluir este pátio pois existem motos alocadas nele.", e);
+        }
+    }
+
+    public List<Patio> findByNome(String nome) {
+        return patioRepository.findByNomeContainingIgnoreCase(nome);
+    }
+
+    public boolean hasCapacidade(Patio patio) {
+        Long motosAtuais = motoRepository.countMotosInPatio(patio);
+        return motosAtuais < patio.getCapacidadeMaxima();
+    }
+
+    public Long getOcupacaoAtual(Patio patio) {
+        return motoRepository.countMotosInPatio(patio);
+    }
+
+    public double getTaxaOcupacao(Patio patio) {
+        Long ocupacao = getOcupacaoAtual(patio);
+        Integer capacidadeMaxima = patio.getCapacidadeMaxima();
+        if (capacidadeMaxima == null || capacidadeMaxima == 0) {
+            return ocupacao > 0 ? 100d : 0d;
+        }
+        return (ocupacao.doubleValue() / capacidadeMaxima.doubleValue()) * 100;
+    }
+}
