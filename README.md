@@ -1,6 +1,6 @@
 # Sprint 4 - FIAP DevOps & Cloud Computing
 
-Sistema de gerenciamento de pátios de motos com CRUD completo, autenticação GitHub OAuth2, e CI/CD automatizado na Azure.
+Sistema de gerenciamento de pátios de motos com CRUD completo, autenticação GitHub OAuth2, e CI/CD automatizado na Azure. 
 
 ---
 
