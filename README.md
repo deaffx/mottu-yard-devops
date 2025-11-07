@@ -92,8 +92,8 @@ Configure em: **Pipelines → Edit → Variables**
 | `ACI_NAME` | `mottu-yard-aci` | ❌ |
 | `DB_SERVER` | `mottuyarddb[NUMERO].postgres.database.azure.com` | ❌ |
 | `DB_NAME` | `challenge` | ❌ |
-| `DB_USER` | `mottuadmin` | ✅ |
-| `DB_PASS` | (senha do PostgreSQL) | ✅ |
+| `DB_USER` | `mottuadmin` | ❌ |
+| `DB_PASS` | `Mottu@2024#Secure` | ❌ |
 | `GITHUB_CLIENT_ID` | (GitHub OAuth App) | ✅ |
 | `GITHUB_CLIENT_SECRET` | (GitHub OAuth App) | ✅ |
 
@@ -273,7 +273,7 @@ az group delete --name rg-mottu-yard --yes --no-wait
 
 ## 📄 Licença
 
-Projeto acadêmico - FIAP 2024 - Sprint 4  
+Projeto acadêmico - FIAP 2025 - Sprint 4  
 Disciplina: DevOps & Cloud Computing com Java Advanced
 
 ---
