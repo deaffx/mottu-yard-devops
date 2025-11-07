@@ -36,7 +36,7 @@ Sistema de gerenciamento de pátios de motos com CRUD completo, autenticação G
 
 ---
 
-## 🗄️ 4. Banco de Dados em Nuvem
+## 🗄️ 2. Banco de Dados em Nuvem
 
 **Tecnologia**: Azure Database for PostgreSQL Flexible Server 16  
 **Tier**: Burstable (B1ms)  
@@ -58,36 +58,7 @@ Migrations em: `src/main/resources/db/migration/V001__*.sql`
 
 ---
 
-## ⚙️ 5. Configuração do Azure DevOps
-
-### Criar Projeto
-
-1. Acesse: https://dev.azure.com
-2. **New Project**:
-   - **Project Name**: `Sprint 4 – Azure DevOps`
-   - **Description**: 
-     ```
-     Projeto para entrega da Sprint 4 do professor [NOME DO PROFESSOR]
-     Integrantes:
-     - RM554507 - Thiago Moreno Matheus - 2TDSA
-     - RM556118 - Celso Canaveze Teixeira Pinto - 2TDSA
-     ```
-   - **Visibility**: Private
-   - **Version control**: Git
-   - **Work item process**: Scrum
-3. Clique em **Create**
-
-### 6. Convidar Professor
-
-1. **Project Settings** → **Permissions** → **Members**
-2. Clique em **Add** → **Add users**
-3. Digite e-mail do professor
-4. **Access level**: **Basic**
-5. Clique em **Save**
-
----
-
-## 🚀 7. Pipeline CI/CD
+## 🚀 3. Pipeline CI/CD
 
 ### Configuração Inicial
 
@@ -126,7 +97,7 @@ Configure em: **Pipelines → Edit → Variables**
 | `GITHUB_CLIENT_ID` | (GitHub OAuth App) | ✅ |
 | `GITHUB_CLIENT_SECRET` | (GitHub OAuth App) | ✅ |
 
-### Estrutura da Pipeline (3 Stages)
+### Estrutura da Pipeline (2 Stages)
 
 #### **Stage 1: Build (CI)**
 - ✅ **Trigger**: Push na branch `main` (automático)
@@ -137,14 +108,14 @@ Configure em: **Pipelines → Edit → Variables**
 - ✅ **Testes**: JUnit executado automaticamente
 - ✅ **Publicação**: Resultados dos testes + artifact (.jar)
 
-#### **Stage 2: BuildAndPushImage (CI)**
+#### **Stage 1.5: BuildAndPushImage (CI)**
 - ✅ **Download** do artifact (.jar)
 - ✅ **Copy** JAR para nome esperado pelo Dockerfile
 - ✅ **Docker Login** no ACR (via ServiceConnection)
 - ✅ **Docker Build**: Cria imagem com tags `latest` e `$(Build.BuildId)`
 - ✅ **Docker Push**: Envia imagem para ACR
 
-#### **Stage 3: Deploy_ACI (CD)**
+#### **Stage 2: Deploy_ACI (CD)**
 - ✅ **Trigger**: Após Stage 2 (automático)
 - ✅ **Delete** container antigo
 - ✅ **Create** novo container ACI:
@@ -246,121 +217,7 @@ DB_USER=mottuadmin
 DB_PASS=***
 ```
 
-⚠️ **Configure essas variáveis no Azure DevOps!**
-
 ---
-
-## 🎬 8. Preparação para Vídeo
-
-### Checklist Antes de Gravar
-
-- [ ] **VS Code** aberto com código da aplicação
-- [ ] **Azure DevOps** aberto na pipeline
-- [ ] **Azure Portal** aberto (PostgreSQL + ACI)
-- [ ] **Extensão PostgreSQL** instalada no VS Code
-- [ ] **GitHub** pronto para push
-- [ ] **Aplicação** funcionando na URL pública
-- [ ] **Som e vídeo** testados (mínimo 720p)
-
-### Roteiro do Vídeo
-
-**1. Apresentação das Ferramentas (2 min)**
-- Mostre VS Code com projeto aberto
-- Mostre Azure DevOps (projeto + pipeline)
-- Mostre Azure Portal (PostgreSQL + ACI)
-- Mostre conexão do banco no VS Code
-
-**2. Configuração da Pipeline (3 min)**
-- Abra `azure-pipelines.yml`
-- Explique cada stage:
-  - Stage 1: Build + Tests
-  - Stage 2: Docker Build + Push
-  - Stage 3: Deploy ACI
-- Mostre variáveis configuradas (sem expor secrets)
-- Mostre Service Connections
-
-**3. Push e Trigger Automático (1 min)**
-- Edite `README.md` (adicione linha)
-- `git add .`
-- `git commit -m "test: pipeline trigger"`
-- `git push origin main`
-- Mostre pipeline iniciando automaticamente
-
-**4. Acompanhamento da Execução (5 min)**
-- Abra detalhes do run
-- Explique logs de cada stage:
-  - Build: Download dependencies, compile, tests
-  - Docker: Build image, push to ACR
-  - Deploy: Delete old container, create new
-- Mostre testes passando
-- Mostre artifact publicado
-
-**5. Recursos na Azure (2 min)**
-- Portal Azure → Resource Group
-- Mostre PostgreSQL (status Ready)
-- Mostre ACI (status Running, URL pública)
-- Mostre ACR (imagens com tags)
-
-
-**6. Executar CRUD Completo (5 min)**
-
-Abra: `http://[seu-aci].brazilsouth.azurecontainer.io:8080`
-
-**Pátios:**
-- Criar novo pátio (mostre formulário)
-- Consultar no banco: `SELECT * FROM patios;`
-- Editar pátio
-- Consultar alteração no banco
-- Deletar pátio
-- Confirmar deleção no banco
-
-**Motos:**
-- Criar nova moto vinculada ao pátio
-- Consultar no banco: `SELECT * FROM motos;`
-- Editar moto
-- Consultar alteração
-- Deletar moto
-- Confirmar deleção
-
-**Manutenções (perfil MECÂNICO):**
-- Criar manutenção para moto
-- Consultar: `SELECT * FROM manutencoes;`
-- Atualizar status
-- Deletar
-- Confirmar no banco
-
-⚠️ **Importante**: Mostre SEMPRE a query no banco após cada operação!
-
----
-
-## 🔧 Comandos Úteis
-
-### Obter URL da Aplicação
-
-```bash
-az container show \
-  --resource-group rg-mottu-yard \
-  --name mottu-yard-aci \
-  --query ipAddress.fqdn \
-  --output tsv
-```
-
-### Ver Logs do Container
-
-```bash
-az container logs \
-  --resource-group rg-mottu-yard \
-  --name mottu-yard-aci
-```
-
-### Status do Container
-
-```bash
-az container show \
-  --resource-group rg-mottu-yard \
-  --name mottu-yard-aci \
-  --query "containers[0].instanceView.currentState"
-```
 
 ### Conectar ao PostgreSQL (VS Code)
 
