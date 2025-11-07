@@ -242,8 +242,8 @@ ACR_USERNAME=mottuyardacr12345 (secret)
 ACR_PASSWORD=*** (secret)
 DB_SERVER=mottuyarddb12345.postgres.database.azure.com
 DB_NAME=challenge
-DB_USER=mottuadmin (secret)
-DB_PASS=*** (secret)
+DB_USER=mottuadmin
+DB_PASS=***
 ```
 
 ⚠️ **Configure essas variáveis no Azure DevOps!**
