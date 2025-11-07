@@ -52,19 +52,32 @@ stages:
               targetType: "inline"
               script: |
                 cd $(Build.ArtifactStagingDirectory)
+                echo "=== Files in staging directory ==="
+                ls -lah
+                echo "=== Filtering JAR files ==="
                 # Filtrar apenas o JAR principal (sem -plain)
                 JAR_FILE=$(ls *.jar | grep -v plain | head -n 1)
                 if [ -n "$JAR_FILE" ]; then
                   mv "$JAR_FILE" mottu-yard.jar
-                  echo "Renamed $JAR_FILE to mottu-yard.jar"
+                  echo "✅ Renamed $JAR_FILE to mottu-yard.jar"
                   ls -lh
                 else
-                  echo "No JAR file found!"
+                  echo "❌ No JAR file found!"
                   exit 1
                 fi
 
+          - task: Bash@3
+            displayName: "Verify Artifact Before Publishing"
+            inputs:
+              targetType: "inline"
+              script: |
+                echo "=== Artifact Directory Contents ==="
+                ls -lah $(Build.ArtifactStagingDirectory)
+                echo "=== About to publish ==="
+
           - publish: $(Build.ArtifactStagingDirectory)
             artifact: MottuYardApp
+            displayName: "Publish MottuYardApp Artifact"
 
       - job: BuildAndPushImage
         displayName: Build and push docker image
